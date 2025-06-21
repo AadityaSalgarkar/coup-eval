@@ -59,17 +59,12 @@ def declare_winner(winner_name) :
 
 def EndGame() :
     display("Game over")
-    for file in os.listdir("buffers/") :
-        with open("buffers/%s" % (file), "w") as f :
-            f.truncate(0)
 
 def StartGame() :
     # Create new files in buffers/ for each player
-    for player in Players :
-        # remove the file if it exists
-        if os.path.exists("buffers/%s.txt" % (player.name)) :
-            os.remove("buffers/%s.txt" % (player.name))
-
+    for file in os.listdir("buffers/") :
+        with open("buffers/%s" % (file), "w") as f :
+            f.truncate(0)
     display("Game started")
 
 class ConsolePlayer(Player):
@@ -536,4 +531,16 @@ def main():
         pass
     
 if __name__ == "__main__":
-    main()
+    with open("results.txt", "a") as f :
+        for _ in range(10):
+            f.write("--------------------------------\n")
+            f.write(f"Game number: {_}\n")
+            f.write("--------------------------------\n")
+            try : 
+                main()
+            except Exception as e: 
+                pass
+            # write all the files in buffers/ to the file
+            for file in os.listdir("buffers/") :
+                with open("buffers/%s" % (file), "r") as g :
+                    f.write(g.read())
