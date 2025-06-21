@@ -5,6 +5,7 @@ from llm_api import send_api_request
 
 import random
 import os
+import datetime
 
 # Freemode allows the game to allow for any cards to be played
 FreeMode = True
@@ -275,7 +276,7 @@ def showRevealedCards():
     reveals = [card.name for card in GameState.RevealedCards]
     reveals.sort()
     for card in reveals:
-        display("   ", card)
+        display("   "+   card)
 
 def showActions(skip_actions=["Contessa"]):
     for i, action in enumerate(AvailableActions):
@@ -411,7 +412,9 @@ def MainLoop():
             PlayersAlive = [player for player in Players if player.alive]
         
         def ChooseAction(skip_actions=[]):    
-            move = get_input("\nAction> ", player.name)
+            current_time = datetime.datetime.now()
+
+            move = get_input(f"\n{current_time} Action> ", player.name)
             
 
             if not move.isnumeric():
@@ -446,7 +449,7 @@ def MainLoop():
                 return PossibleTargets[target]
 
             if player.coins < AvailableActions[move].coinsNeeded:
-                # display(" You need %i coins to play %s. You only have %i coins." % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
+                display(" You need %i coins to play %s. You only have %i coins. Pick another action" % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
                 ChooseAction()
                 return
                 
