@@ -15,8 +15,13 @@ import rich
 import asyncio
 from ollama import AsyncClient
 
+model_name = [
+"gemma3:1b",
+"deepseek-r1:8b",
+"qwen3:4b"
+]
 
-def send_api_request(name) :
+def send_api_request(name, model_name=model_name[0]) :
     """
     Send an API request to the LLM.
     read content from buffers/name.txt 
@@ -45,12 +50,13 @@ def send_api_request(name) :
             "\nWhen forced Coup is the only allowed move, then choose the action to do the coup, typically 3.",
             "\nRead carefully the instructions at the end which specify the actions allowed. Only pick one of the actions allowed. For example,select influence to lose: 1: Duke 2: Captain. Then, pick either 1 or 2, never 3 or higher number.",
             "\nWrite your answer within the block <answer> </answer>.  e.g. <answer> 1 </answer>.  Be brief and to the point."
-            "\nWhen asked for a choice between (Y/N), pick either Y or N as an answer"
+            "\nWhen asked for a choice between (Y/N), pick either Y or N as an answer",
+            "String between <answer></answer> must be one of the following: Y/N/1/2/3/4/5/6/7/8"
             ]
         content = f"You are a master player of the game of Coup. GameRules: {"".join(GameRules)}. {"".join(AdditionalRules)} You are given the following information about the game state till now: {message}."
         
         rich.print(content)
-        response = await AsyncClient().generate(model='gemma3:1b',prompt=content)
+        response = await AsyncClient().generate(model=model_name,prompt=content)
         rich.print(response.response)
         answer = response.response.strip("<answer>").strip("</answer>")
         return answer

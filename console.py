@@ -449,14 +449,17 @@ def MainLoop():
                 return PossibleTargets[target]
 
             if player.coins < AvailableActions[move].coinsNeeded:
-                display(" You need %i coins to play %s. You only have %i coins. Pick another action" % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
+                # display(" You need %i coins to play %s. You only have %i coins. Pick another action" % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
+                skip_actions = [action for action in AvailableActions if action != "Coup"]
+                showActions(skip_actions)
                 ChooseAction()
                 return
                 
             if player.coins >= action.ForceCoupCoins and AvailableActions[move].name != "Coup":
                 display("Player has %i coins. Forced Coup is the only allowed action" % (player.coins))
                 skip_actions = [action for action in AvailableActions if action != "Coup"]
-                ChooseAction(skip_actions)
+                showActions(skip_actions)
+                ChooseAction()
                 return            
             
             target = None
