@@ -11,7 +11,7 @@ FreeMode = True
 FreeMode = False
 
 defaultNames = ["Leonardo", "Michelangelo", "Raphael", "Donatello", "Splinter", "April"]
-
+AllNames = defaultNames[:]
 Players = []
 PlayersAlive = []
 CurrentPlayer = 0
@@ -27,8 +27,7 @@ def get_input(message, name = "") :
     return display(message= message, name= name,input_needed= True)
 
 def display(message, name = "", input_needed = False) : 
-    if name != "" and not all(name != defaultNames[i] for i in range(len(defaultNames))) :
-        assert False, f"{name} is not in defaultNames"
+    assert name == "" or name in AllNames, f"{name} is not in defaultNames"
 
     if CONSOLE:
         if name != "" :
@@ -84,11 +83,11 @@ class ConsolePlayer(Player):
         else:
             name = self.name + ","
         
-        choice = get_input("%s do you think %s's %s is a bluff?\n Do you want to call (Y/N)? " % (name, activePlayer.name, action.name))
+        choice = get_input("%s do you think %s's %s is a bluff?\n Do you want to call (Y/N)? " % (name, activePlayer.name, action.name), self.name)
         choice = choice.upper()
         
         if not choice.strip() in ('Y', 'N', ''):
-            display("\n Type Y to call bluff. \n Type N to allow %s's %s.\n" % (activePlayer.name, action.name))
+            # display("\n Type Y to call bluff. \n Type N to allow %s's %s.\n" % (activePlayer.name, action.name))
             return self.confirmCall(activePlayer, action)
             
         if choice == 'Y':
@@ -278,10 +277,10 @@ def showRevealedCards():
     for card in reveals:
         display("   ", card)
 
-def showActions():
+def showActions(skip_actions=["Contessa"]):
     for i, action in enumerate(AvailableActions):
-        if action.name != "Contessa":   # ignore Contessa as a possible action.
-            display(" %i: %s" % (i + 1, action.name))
+        if action.name not in skip_actions:
+            display("\n%i: %s" % (i + 1, action.name))
     # display(" X: Exit the game")
 
 def SelectCards(message, twoCards):
@@ -411,12 +410,11 @@ def MainLoop():
             global PlayersAlive 
             PlayersAlive = [player for player in Players if player.alive]
         
-        def ChooseAction():    
-            move = get_input("Action> ", player.name)
+        def ChooseAction(skip_actions=[]):    
+            move = get_input("\nAction> ", player.name)
             
 
             if not move.isnumeric():
-
                 assert False, "Move invalid, write numbers"
             move = int(move) - 1
             
@@ -448,13 +446,14 @@ def MainLoop():
                 return PossibleTargets[target]
 
             if player.coins < AvailableActions[move].coinsNeeded:
-                display(" You need %i coins to play %s. You only have %i coins." % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
+                # display(" You need %i coins to play %s. You only have %i coins." % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
                 ChooseAction()
                 return
                 
             if player.coins >= action.ForceCoupCoins and AvailableActions[move].name != "Coup":
                 display("Player has %i coins. Forced Coup is the only allowed action" % (player.coins))
-                ChooseAction()
+                skip_actions = [action for action in AvailableActions if action != "Coup"]
+                ChooseAction(skip_actions)
                 return            
             
             target = None
@@ -481,7 +480,7 @@ def MainLoop():
                 ChooseAction()
                 return
             except action.NotEnoughCoins as exc:
-                display(" You need %i coins to play %s. You only have %i coins." % (exc.coinsNeeded, AvailableActions[move].name, player.coins))
+                showActions([AvailableActions[move].name])
                 ChooseAction()
                 return
             except action.BlockOnly:
@@ -526,10 +525,9 @@ def main():
     # get_input("\n%s, press enter key to start the game..." % (Players[0].name))
     try :
         MainLoop()
+        EndGame()
     except KeyboardInterrupt:
         pass
-    finally: 
-        EndGame()
     
 if __name__ == "__main__":
     main()
