@@ -22,26 +22,20 @@ CONSOLE = True
 def print_red(message) :
     print("\033[91m%s\033[0m" % (message))
 
-def show(message, name = "") :
-    if CONSOLE: 
-        if name != "" : 
-            print_red("This message is shown only to %s" % (name))
-            print_red(message)
-            print("\n")
-        else : print(message)
-    else :
-        print(message, name)
-
 def get_input(message, name = "") :
-    if CONSOLE: 
+    return display(message= message, name= name,input_needed= True)
+
+def display(message, name = "", input_needed = False) : 
+    if CONSOLE:
         if name != "" :
-            print_red("This message is shown only to %s" % (name))
-            print_red(message)
-            return input()
+            print_red("This message is shown only to %s: %s" % (name, message))
         else :
-            return input(message)
+            print(message)
+        if input_needed:
+            return input().strip()
     else :
-        return input(message+ name)
+        assert False, "CONSOLE is not supported in non-console mode"
+    
 
 
 class ConsolePlayer(Player):
@@ -60,7 +54,7 @@ class ConsolePlayer(Player):
         choice = choice.upper()
         
         if not choice.strip() in ('Y', 'N', ''):
-            show("\n Type Y to call bluff. \n Type N to allow %s's %s.\n" % (activePlayer.name, action.name))
+            display("\n Type Y to call bluff. \n Type N to allow %s's %s.\n" % (activePlayer.name, action.name))
             return self.confirmCall(activePlayer, action)
             
         if choice == 'Y':
@@ -81,10 +75,10 @@ class ConsolePlayer(Player):
         if ConsolePlayer.ShowBlockOptions:
             ConsolePlayer.ShowBlockOptions = False            
             
-            show("\n%s's %s can be blocked with the following cards:" % (activePlayer.name, opponentAction.name))
+            display("\n%s's %s can be blocked with the following cards:" % (activePlayer.name, opponentAction.name))
             for i, card in enumerate(cardBlockers):
-                show(" %i: %s" % (i + 1, card.name))
-            show(" %i: (Do not block)\n" % (totalBlockers))            
+                display(" %i: %s" % (i + 1, card.name))
+            display(" %i: (Do not block)\n" % (totalBlockers))            
         
         if len(PlayersAlive) > 2:
             longestName = [len(player.name) for player in PlayersAlive]
@@ -100,7 +94,7 @@ class ConsolePlayer(Player):
         
         if not choice.isnumeric():
             assert False, "Choice is not numeric"
-            # show(" Select a number between 1-%i. Press enter to allow %s's %s." % (totalBlockers, activePlayer.name, opponentAction.name))
+            # display(" Select a number between 1-%i. Press enter to allow %s's %s." % (totalBlockers, activePlayer.name, opponentAction.name))
             # return self.confirmBlock(activePlayer, opponentAction)
         choice = int(choice) - 1
         
@@ -108,25 +102,25 @@ class ConsolePlayer(Player):
             return None         # player decides not to block
         
         if not (choice >= 0 and choice < len(cardBlockers)):
-            show(" Select a number between 1-%i. Press enter to allow %s's %s." % (totalBlockers, activePlayer.name, opponentAction.name))
+            display(" Select a number between 1-%i. Press enter to allow %s's %s." % (totalBlockers, activePlayer.name, opponentAction.name))
             return self.confirmBlock(activePlayer, opponentAction)
             
         block = cardBlockers[choice - 1]
         
-        show("\n\n%s is blocking with %s" % (self.name, block.name))
+        display("\n\n%s is blocking with %s" % (self.name, block.name))
         return block
         
     def selectInfluenceToDie(self):
         """ select an influence to die. returns the value from the influence list. """
-        show("\n%s has lost an influence!" % (self.name))
+        display("\n%s has lost an influence!" % (self.name))
         
         if len(self.influence) == 1:
-            show("%s will lose their last card, %s" % (self.name, self.influence[0].name))
+            display("%s will lose their last card, %s" % (self.name, self.influence[0].name))
             return self.influence[0]
         
-        show("%s, select influence to lose:" % (self.name), self.name)
+        display("%s, select influence to lose:" % (self.name), self.name)
         for i, card in enumerate(self.influence):
-            show(" %i: %s" % (i + 1, card.name), self.name)
+            display(" %i: %s" % (i + 1, card.name), self.name)
         choice = get_input("> ", self.name)
 
         if not choice.isnumeric():
@@ -144,11 +138,9 @@ class ConsolePlayer(Player):
         finalChoices = []
         
         def askChoice(choices, get_inputMessage):
-            show("")
             for i, choice in enumerate(choices):
-                show(" %i: %s" % (i + 1, choice.name), self.name)
+                display(" %i: %s" % (i + 1, choice.name), self.name)
             
-            show("")
             card = get_input(get_inputMessage, self.name)
             
             if not card.isnumeric():
@@ -163,7 +155,7 @@ class ConsolePlayer(Player):
         
         ClearScreen("Ambassador success", 24)
 
-        show("\n%s, these are the cards you drew:" % (self.name), self.name)
+        display("\n%s, these are the cards you drew:" % (self.name), self.name)
         
         card1 = askChoice(choices, "Select the first card to take> ")
         choices.remove(card1)
@@ -171,12 +163,12 @@ class ConsolePlayer(Player):
         if (influenceRemaining == 1):
             return [card1]
         else:
-            show("")
+            display("")
             card2 = askChoice(choices, "Select the second card to take>")
             return [card1, card2]
 
 def ClearScreen(headerMessage, headerSize = 10):
-    show("%s" % (headerMessage))
+    display("%s" % (headerMessage))
     # os.system('cls' if os.name == 'nt' else 'clear')    # http://stackoverflow.com/a/2084628/1599
     
     # # http://stackoverflow.com/questions/17254780/showing-extended-ascii-characters-in-python-3-in-both-windows-and-linux
@@ -192,9 +184,9 @@ def ClearScreen(headerMessage, headerSize = 10):
     # def decode(x):
     #     return (''.join(dic.get(i, i.encode('utf-8')).decode('utf-8') for i in x))
 
-    # show(decode("+%s%%" % ('-' * headerSize)))
-    # show(decode("|%s|"  % (headerMessage.center(headerSize))))
-    # show(decode("\\%s/" % ('-' * headerSize)))
+    # display(decode("+%s%%" % ('-' * headerSize)))
+    # display(decode("|%s|"  % (headerMessage.center(headerSize))))
+    # display(decode("\\%s/" % ('-' * headerSize)))
     
 def showTurnOrder(currentPlayerShown):
     header = [" Turn order", ""]    
@@ -215,7 +207,7 @@ def showTurnOrder(currentPlayerShown):
         
 
 def showDeckList():
-    show("There are %i cards in the Court Deck" % (len(GameState.Deck)))
+    display("There are %i cards in the Court Deck" % (len(GameState.Deck)))
     
     if FreeMode:
         # calculate what cards can be in the court deck
@@ -236,32 +228,32 @@ def showDeckList():
         deck = [card.name for card in deck]
         deck.sort()
         
-        show("Theoritical cards are:")
+        display("Theoritical cards are:")
         for card in deck:
-            show(" ", card)
+            display(" ", card)
 
 def showRevealedCards():
     size = len(GameState.RevealedCards)
     if size == 0:
         return
         
-    show("There are %i cards that has been revealed:" % (size))
+    display("There are %i cards that has been revealed:" % (size))
 
     reveals = [card.name for card in GameState.RevealedCards]
     reveals.sort()
     for card in reveals:
-        show("   ", card)
+        display("   ", card)
 
 def showActions():
     for i, action in enumerate(AvailableActions):
         if action.name != "Contessa":   # ignore Contessa as a possible action.
-            show(" %i: %s" % (i + 1, action.name))
-    # show(" X: Exit the game")
+            display(" %i: %s" % (i + 1, action.name))
+    # display(" X: Exit the game")
 
 def SelectCards(message, twoCards):
-    show(message)
+    display(message)
     for i, card in enumerate(GameState.CardsAvailable):
-        show("%i: %s" % (i + 1, card.name))
+        display("%i: %s" % (i + 1, card.name))
     
     def get_inputCard(message):
         card = get_input(message)
@@ -327,17 +319,17 @@ def Setup():
         if player.name.strip() == "":
             player.name = random.choice(defaultNames)
             defaultNames.remove(player.name)
-            show(" Player %i's name is %s\n" % (Number + 1, player.name))
+            display(" Player %i's name is %s\n" % (Number + 1, player.name))
             
         if FreeMode:                
             message = "Select %s's cards" % (player.name)
             player.influence = SelectCards(message, True)
             
-            show(" Player %s is holding: %s and %s\n" % (player.name, player.influence[0].name, player.influence[1].name))
+            display(" Player %s is holding: %s and %s\n" % (player.name, player.influence[0].name, player.influence[1].name))
                 
         return player
 
-    show("\n")
+    display("\n")
     for i in range(PlayerCount):
         Players.append(CreatePlayer(i))
         
@@ -371,11 +363,11 @@ def MainLoop():
             headerList.append(headerStr)
             ClearScreen("\n".join(headerList), rowWidth)
             
-            show("")
+            display("")
             showDeckList()
             showRevealedCards()
             heldCards = " and ".join([card.name for card in player.influence])
-            show("\n\n%s's cards are: %s" % (player.name, heldCards), player.name)
+            display("\n\n%s's cards are: %s" % (player.name, heldCards), player.name)
         
         def Cleanup():
             global CurrentPlayer
@@ -387,7 +379,9 @@ def MainLoop():
         
         def ChooseAction():    
             move = get_input("Action> ")
+
             if not move.isnumeric():
+
                 assert False, "Move invalid, write numbers"
             move = int(move) - 1
             
@@ -405,9 +399,9 @@ def MainLoop():
                 if len(PossibleTargets) == 1:
                     return PossibleTargets[0]
                 
-                show("\nPossible targets:")
+                display("\nPossible targets:")
                 for i, iterPlayer in enumerate(PossibleTargets):
-                    show(" %i: %s" % (i + 1, iterPlayer.name))
+                    display(" %i: %s" % (i + 1, iterPlayer.name))
                 target = get_input("Choose a target> ")
                 
                 if not target.isnumeric():
@@ -419,12 +413,12 @@ def MainLoop():
                 return PossibleTargets[target]
 
             if player.coins < AvailableActions[move].coinsNeeded:
-                show(" You need %i coins to play %s. You only have %i coins." % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
+                display(" You need %i coins to play %s. You only have %i coins." % (AvailableActions[move].coinsNeeded, AvailableActions[move].name, player.coins))
                 ChooseAction()
                 return
                 
             if player.coins >= action.ForceCoupCoins and AvailableActions[move].name != "Coup":
-                show("Player has %i coins. Forced Coup is the only allowed action" % (player.coins))
+                display("Player has %i coins. Forced Coup is the only allowed action" % (player.coins))
                 ChooseAction()
                 return            
             
@@ -448,29 +442,29 @@ def MainLoop():
                 
                 status, response = player.play(AvailableActions[move], target)
             except action.ActionNotAllowed as e:
-                show(e.message)
+                display(e.message)
                 ChooseAction()
                 return
             except action.NotEnoughCoins as exc:
-                show(" You need %i coins to play %s. You only have %i coins." % (exc.coinsNeeded, AvailableActions[move].name, player.coins))
+                display(" You need %i coins to play %s. You only have %i coins." % (exc.coinsNeeded, AvailableActions[move].name, player.coins))
                 ChooseAction()
                 return
             except action.BlockOnly:
-                show("You cannot play %s as an action" % (AvailableActions[move].name))
+                display("You cannot play %s as an action" % (AvailableActions[move].name))
                 ChooseAction()
                 return
             except action.TargetRequired:
-                show("You need to select a valid target.\n")
+                display("You need to select a valid target.\n")
                 showActions()
                 ChooseAction()
                 return
                 
             if status == False:
-                show(response)
+                display(response)
             
         if player.alive:
             showInfo()
-            show("\nAvailable actions:")
+            display("\nAvailable actions:")
             showActions()
             ChooseAction()
             
@@ -486,9 +480,9 @@ def main():
     for player in Players:
         showTurnOrder(player)
         
-        show("\n%s, please see your cards" % player.name)
+        display("\n%s, please see your cards" % player.name, player.name)
         heldCards = " and ".join([card.name for card in player.influence])
-        show("\n%s\n" % (heldCards), player.name)
+        display("\n%s\n" % (heldCards), player.name)
         # get_input("%sPress ENTER to hide your cards" % (padding))
 
     ClearScreen("Game start", 14)
