@@ -1,6 +1,7 @@
 import core.action as action
 from core.player import Player
 from core.game   import GameState
+from llm_api import send_api_request
 
 import random
 import os
@@ -17,7 +18,7 @@ CurrentPlayer = 0
 
 AvailableActions = []
 
-CONSOLE = True
+CONSOLE = False
 
 def print_red(message) :
     print("\033[91m%s\033[0m" % (message))
@@ -26,6 +27,9 @@ def get_input(message, name = "") :
     return display(message= message, name= name,input_needed= True)
 
 def display(message, name = "", input_needed = False) : 
+    if name != "" and not all(name != defaultNames[i] for i in range(len(defaultNames))) :
+        assert False, f"{name} is not in defaultNames"
+
     if CONSOLE:
         if name != "" :
             print_red("This message is shown only to %s: %s" % (name, message))
@@ -34,9 +38,39 @@ def display(message, name = "", input_needed = False) :
         if input_needed:
             return input().strip()
     else :
-        assert False, "CONSOLE is not supported in non-console mode"
-    
+        if name != "" :
+            # if the message is to be shown only to name
+            # then write only to single file
+            with open("buffers/%s.txt" % (name), "a") as f :
+                f.write(message) 
+        else :
+            # if the message is to be shown to all players
+            # then write to all files
+            for player in PlayersAlive :
+                with open("buffers/%s.txt" % (player.name), "a") as f :
+                    f.write(message) 
 
+        if input_needed : 
+            assert name != "", "Name is required for input_needed"
+            return send_api_request(name)
+def declare_winner(winner_name) :
+    display("The winner is %s" % (winner_name))
+    EndGame()
+
+def EndGame() :
+    display("Game over")
+    for file in os.listdir("buffers/") :
+        with open("buffers/%s" % (file), "w") as f :
+            f.truncate(0)
+
+def StartGame() :
+    # Create new files in buffers/ for each player
+    for player in Players :
+        # remove the file if it exists
+        if os.path.exists("buffers/%s.txt" % (player.name)) :
+            os.remove("buffers/%s.txt" % (player.name))
+
+    display("Game started")
 
 class ConsolePlayer(Player):
     ShowBlockOptions = True         # global variable to showpossible options for blocking. set to True every turn
@@ -87,7 +121,7 @@ class ConsolePlayer(Player):
         else:
             name = self.name + ","
         
-        choice = get_input("%s do you wish to block %s (1-%i)? " % (name, opponentAction.name, totalBlockers))
+        choice = get_input("%s do you wish to block %s (1-%i)? " % (name, opponentAction.name, totalBlockers), self.name)
         choice = choice.strip()
         if choice == "":
             choice = str(totalBlockers)      # do not block
@@ -378,7 +412,8 @@ def MainLoop():
             PlayersAlive = [player for player in Players if player.alive]
         
         def ChooseAction():    
-            move = get_input("Action> ")
+            move = get_input("Action> ", player.name)
+            
 
             if not move.isnumeric():
 
@@ -402,7 +437,7 @@ def MainLoop():
                 display("\nPossible targets:")
                 for i, iterPlayer in enumerate(PossibleTargets):
                     display(" %i: %s" % (i + 1, iterPlayer.name))
-                target = get_input("Choose a target> ")
+                target = get_input("Choose a target> ", player.name)
                 
                 if not target.isnumeric():
                     return ChooseTarget()
@@ -428,7 +463,7 @@ def MainLoop():
 
             try:
                 header = []
-                headerStr = "%s is playing %s" % (player.name, AvailableActions[move].name)
+                headerStr = "\n%s is playing %s\n" % (player.name, AvailableActions[move].name)
                 headerLen = len(headerStr) + 4
                 headerStr = headerStr.center(headerLen)
                 header.append(headerStr)
@@ -472,6 +507,7 @@ def MainLoop():
         
     if len(PlayersAlive) == 1: 
         ClearScreen("The winner is %s" % (PlayersAlive[0].name), 79)
+        DeclareWinner(PlayersAlive[0].name)
     
 def main():
     ClearScreen("Game Setup", 50)
@@ -486,8 +522,14 @@ def main():
         # get_input("%sPress ENTER to hide your cards" % (padding))
 
     ClearScreen("Game start", 14)
+    StartGame()
     # get_input("\n%s, press enter key to start the game..." % (Players[0].name))
-    MainLoop()
+    try :
+        MainLoop()
+    except KeyboardInterrupt:
+        pass
+    finally: 
+        EndGame()
     
 if __name__ == "__main__":
     main()
