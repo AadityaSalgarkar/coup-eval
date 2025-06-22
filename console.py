@@ -407,9 +407,9 @@ def MainLoop():
             PlayersAlive = [player for player in Players if player.alive]
         
         def ChooseAction(skip_actions=[]):    
-            current_time = datetime.datetime.now()
-
-            move = get_input(f"\n{current_time} Action> ", player.name)
+            # current_time = datetime.datetime.now()
+            # move = get_input(f"\n{current_time} Action> ", player.name)
+            move = get_input("\nAction> ", player.name)
             
 
             if not move.isnumeric():
@@ -532,7 +532,7 @@ def main():
     
 if __name__ == "__main__":
     with open("results.txt", "a") as f :
-        for _ in range(10):
+        for _ in range(2):
             f.write("--------------------------------\n")
             f.write(f"Game number: {_}\n")
             f.write("--------------------------------\n")
